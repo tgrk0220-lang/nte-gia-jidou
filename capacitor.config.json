@@ -1,0 +1,8 @@
+{
+  "appId": "com.nte.gearsolver",
+  "appName": "NTE GEAR SOLVER",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

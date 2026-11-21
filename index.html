@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>NTE GEAR SOLVER v6.6</title>
+<style>
+:root{color-scheme:dark;--bg:#0f1117;--panel:#181b24;--panel2:#212531;--line:#353a48;--accent:#f39a45;--gold:#ffd09b;--txt:#f5f5f7;--muted:#9ea4b3}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,-apple-system,sans-serif;padding:6px}
+.wrap{max-width:540px;margin:auto}
+
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:1px 2px 4px}
+.title-box{display:flex;align-items:baseline;gap:5px;min-width:0}
+h1{font-size:15px;margin:0;letter-spacing:.3px;color:var(--gold);white-space:nowrap}
+.ver{font-size:10px;color:var(--muted);background:#1f2330;border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px;margin-bottom:5px}
+
+.char-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.char-lbl{font-size:10.5px;color:var(--muted);white-space:nowrap;font-weight:700}
+.char-select{flex:1;min-width:0;padding:4px 8px;font-size:12px;border-radius:7px;border:1px solid var(--line);background:#141720;color:var(--txt)}
+
+.row{display:flex;gap:5px;align-items:center}
+select,button,input{font:inherit;border-radius:7px;border:1px solid var(--line);background:var(--panel2);color:var(--txt)}
+select{padding:5px 7px;font-size:12px;flex:1;min-width:0}
+button{cursor:pointer;touch-action:manipulation;padding:5px 8px;font-size:11px}
+.primary{background:linear-gradient(135deg,#b55c22,#7d3b12);border-color:#e29a58;color:#fff5e6;font-weight:700}
+.toggle-set-btn{padding:5px 7px;font-size:10.5px;white-space:nowrap;color:var(--gold);border-color:#4b3b2b;background:#231d18}
+
+.set-body{margin-top:5px}
+.set-body.hidden{display:none}
+
+.set-top-grid{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center}
+.req-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:3px}
+.req-item{background:#14171f;border:1px solid #2e3342;border-radius:6px;padding:2px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:9px;color:var(--muted)}
+.req-item.ok{border-color:#52b788;background:#162920;color:#b7e4c7}
+.eff-line{margin-top:4px;font-size:10.5px;line-height:1.35;color:#d6dae6;background:#13161e;border-radius:6px;padding:4px 7px;border:1px solid #282e3b}
+.summary{margin-top:4px;padding:4px 7px;border-radius:6px;background:#1d1712;border:1px solid #4e3722;font-size:10px;color:var(--gold);line-height:1.3}
+
+.board-head{display:flex;justify-content:space-between;align-items:center;gap:4px;margin-bottom:4px;flex-wrap:wrap}
+.mode-group{display:flex;gap:2px;background:#12141c;padding:2px;border-radius:7px;border:1px solid #2b303d}
+.mode-btn{padding:4px 8px;font-size:10.5px;border:none;border-radius:5px;background:transparent;color:var(--muted);font-weight:700}
+.mode-btn.active{background:linear-gradient(135deg,#b55c22,#7d3b12);color:#fff3df}
+.mode-btn.swap.active{background:linear-gradient(135deg,#c47219,#854609);color:#ffe7be;outline:1px solid #ffc07c}
+
+.detail-toggle{padding:3px 7px;font-size:10px}
+.detail-toggle.on{border-color:#d18a4c;color:#ffd09b;background:#3a2718}
+.mode-detail{display:none;margin-top:4px;padding:5px 7px;border-radius:6px;background:#13161f;border:1px solid #2c3242;font-size:10px;line-height:1.35;color:#cfd4e2}
+.mode-detail.show{display:block}
+
+.board{
+  display:grid;
+  grid-template-columns:repeat(10,minmax(0,1fr));
+  gap:0;
+  max-width:295px;
+  margin:0 auto;
+  background:#141720;
+  border:2px solid #484f60;
+  border-radius:6px;
+  overflow:hidden;
+}
+.cell{
+  aspect-ratio:1;
+  padding:0;
+  min-width:0;
+  border-radius:0;
+  background:#262a36;
+  border:1px solid #383e4e;
+  font-size:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+  position:relative;
+  user-select:none;
+}
+.cell.open{background:#4a5564;border:1px solid #637185}
+.cell.placed{background:#d47a32;color:#1a0f07;font-weight:900;border:none}
+
+.board-foot{display:flex;justify-content:space-between;align-items:center;gap:4px;margin-top:4px;font-size:10px;color:var(--muted);flex-wrap:wrap}
+.badges{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.badge{background:#12141c;border:1px solid #2d3240;border-radius:5px;padding:1.5px 5px;color:#d6dae6;font-size:9.5px}
+.badge.ok{border-color:#52b788;background:#162b22;color:#95d5b2}
+.toast{color:var(--gold);font-size:10.5px;min-height:14px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.pal-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 3px;font-size:10px;color:var(--muted)}
+.palette{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+.piece{padding:3px 2px;min-height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5px;background:#1c202b;border-radius:6px}
+.piece.selected{outline:2px solid #ffc07c;background:#593518}
+.piece small{font-size:8.5px;color:#d8dce8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.mini{display:grid;gap:1px}
+.mini span{width:6px;height:6px;background:#f4a236;border-radius:1px;border:1px solid #ffe08a}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:5px}
+.sec-title{font-size:11px;color:var(--muted);font-weight:700;margin-bottom:4px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="topbar">
+    <div class="title-box">
+      <h1>NTE GEAR SOLVER</h1>
+      <span class="ver">v6.6</span>
+    </div>
+    <span id="legendBadgeTop" class="badge">レジェンド 0/4</span>
+  </header>
+
+  <section class="card">
+    <div class="char-row">
+      <span class="char-lbl">キャラ名</span>
+      <select id="charSelect" class="char-select"></select>
+    </div>
+
+    <div class="row">
+      <select id="setSelect"></select>
+      <button id="solveBtn" class="primary" type="button" style="white-space:nowrap">自動配置</button>
+      <button id="toggleSetBox" class="toggle-set-btn" type="button">効果▲</button>
+    </div>
+
+    <div id="setBody" class="set-body">
+      <div class="set-top-grid">
+        <div id="reqGrid" class="req-strip"></div>
+        <span id="legendBadge" class="badge">レジェンド 0/4</span>
+      </div>
+      <div id="setEffBox" class="eff-line"></div>
+      <div id="solveSummary" class="summary">レジェンド[4]＞三型＞余り埋めで自動配置</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="board-head">
+      <div class="mode-group">
+        <button id="modeEdit" class="mode-btn active" type="button">盤面編集</button>
+        <button id="modePlace" class="mode-btn" type="button">配置</button>
+        <button id="modeSwap" class="mode-btn swap" type="button">置換</button>
+      </div>
+      <div style="display:flex;gap:3px;align-items:center">
+        <button id="detailToggle" class="detail-toggle" type="button">詳細: OFF</button>
+        <button id="quickClearPieces" type="button" style="padding:3px 7px;font-size:10px">配置解除</button>
+      </div>
+    </div>
+
+    <div id="board" class="board"></div>
+
+    <div class="board-foot">
+      <div class="badges">
+        <span id="count" class="badge">0マス</span>
+        <span id="placedCount" class="badge">配置0個</span>
+      </div>
+      <span id="modeTag" class="badge">編集モード</span>
+    </div>
+    <div id="msg" class="toast">盤面編集：マスをタップして使用可能範囲を作成</div>
+    <div id="modeDetail" class="mode-detail"></div>
+
+    <div class="pal-head">
+      <span>手動ブロック（回転・反転なし）</span>
+      <span id="selName" style="color:var(--gold)">2マス 横</span>
+    </div>
+    <div id="palette" class="palette"></div>
+  </section>
+
+  <section class="card" style="margin-top:8px">
+    <div class="sec-title">保存・データ管理</div>
+    <div class="row" style="margin-bottom:5px">
+      <input id="saveName" type="text" placeholder="保存名（未入力なら選択キャラ名）" style="padding:5px 7px;font-size:12px;flex:1;min-width:0">
+    </div>
+    <div class="row">
+      <select id="saved"><option value="">保存した盤面を選択</option></select>
+      <button id="load" type="button">読込</button>
+      <button id="delete" type="button">削除</button>
+    </div>
+    <div class="grid3">
+      <button id="save" class="primary" type="button">保存</button>
+      <button id="export" type="button">書き出し</button>
+      <button id="import" type="button">読込JSON</button>
+    </div>
+    <div class="grid2">
+      <button id="clearBoard" type="button">盤面全消去</button>
+      <button id="clearPieces" type="button">ブロック全消去</button>
+    </div>
+    <input id="file" type="file" accept="application/json" hidden>
+  </section>
+</main>
+
+<script>
+const N = 10, key = 'nteGearBoardsV1';
+const CHAR_BOARDS = [
+  {name:'残虹',cells:[22,23,24,25,32,33,34,35,42,43,45,46,53,54,55,56,63,64,65,66]},
+  {name:'ダフォディール',cells:[32,33,34,35,36,42,43,44,45,46,52,53,54,55,56,62,63,64,65,66]},
+  {name:'クロバネ',cells:[32,33,34,35,36,42,43,44,45,46,52,53,54,55,56,62,63,64,65,66]},
+  {name:'リンコ',cells:[32,33,34,35,36,42,43,44,45,46,52,53,54,55,56,62,63,64,65,66]},
+  {name:'イェルム',cells:[22,23,24,25,32,33,34,35,42,43,45,46,53,54,55,56,63,64,65,66]},
+  {name:'あかね',cells:[32,33,34,35,36,42,43,44,45,46,52,53,54,55,56,62,63,64,65,66]},
+  {name:'白蔵',cells:[23,24,25,26,32,33,34,35,36,42,43,44,46,52,53,56,62,63,64,65]},
+  {name:'カオス',cells:[23,24,25,26,32,33,34,35,36,42,43,44,46,52,53,56,62,63,64,65]},
+  {name:'早霧',cells:[22,23,25,26,32,33,34,35,36,42,43,44,45,46,53,54,55,63,64,65]},
+  {name:'九原',cells:[32,33,34,35,36,42,43,44,45,46,52,53,54,55,56,62,63,64,65,66]},
+  {name:'ファルディーヤ',cells:[22,23,24,25,32,33,34,35,42,43,45,46,53,54,55,56,63,64,65,66]},
+  {name:'真紅',cells:[32,33,34,35,36,42,43,44,45,46,52,53,54,55,56,62,63,64,65,66]},
+  {name:'レクイエム',cells:[32,33,34,35,36,42,43,44,45,46,52,53,54,55,56,62,63,64,65,66]},
+  {name:'イロヒ',cells:[22,23,25,26,32,33,34,35,36,42,43,44,45,46,53,54,55,63,64,65]},
+  {name:'ナナリ',cells:[32,33,34,35,36,42,43,44,45,46,52,53,54,55,56,62,63,64,65,66]},
+  {name:'ハソール',cells:[22,23,24,25,32,33,34,35,42,43,45,46,53,54,55,56,63,64,65,66]},
+  {name:'潯',cells:[22,23,25,26,32,33,34,35,36,42,43,44,45,46,53,54,55,63,64,65]},
+  {name:'鑑定士',cells:[22,23,24,25,32,33,34,35,42,43,45,46,53,54,55,56,63,64,65,66]},
+  {name:'ちぃちゃん',cells:[23,24,25,26,32,33,34,35,36,42,43,44,46,52,53,56,62,63,64,65]},
+  {name:'ハニア',cells:[22,23,25,26,32,33,34,35,36,42,43,44,45,46,53,54,55,63,64,65]},
+  {name:'ミント',cells:[23,24,25,26,32,33,34,35,36,42,43,44,46,52,53,56,62,63,64,65]},
+  {name:'アドレー',cells:[22,23,25,26,32,33,34,35,36,42,43,44,45,46,53,54,55,63,64,65]},
+  {name:'エドガー',cells:[32,33,34,35,36,42,43,44,45,46,52,53,54,55,56,62,63,64,65,66]},
+  {name:'海月',cells:[22,23,24,25,32,33,34,35,42,43,45,46,53,54,55,56,63,64,65,66]},
+  {name:'影',cells:[23,24,25,26,32,33,34,35,36,42,43,44,46,52,53,56,62,63,64,65]}
+];
+
+const shapes = [
+  {name:'2マス 横',type:2,c:[[0,0],[1,0]]},
+  {name:'2マス 縦',type:2,c:[[0,0],[0,1]]},
+  {name:'3マス 横',type:3,c:[[0,0],[1,0],[2,0]]},
+  {name:'3マス 縦',type:3,c:[[0,0],[0,1],[0,2]]},
+  {name:'3マス L型',type:3,c:[[0,0],[0,1],[1,1]]},
+  {name:'3マス L型2',type:3,c:[[0,0],[1,0],[0,1]]},
+  {name:'3マス L型3',type:3,c:[[0,0],[1,0],[1,1]]},
+  {name:'3マス L型4',type:3,c:[[1,0],[0,1],[1,1]]},
+  {name:'4マス 横',type:4,c:[[0,0],[1,0],[2,0],[3,0]]},
+  {name:'4マス 縦',type:4,c:[[0,0],[0,1],[0,2],[0,3]]},
+  {name:'4マス S型',type:4,c:[[1,0],[2,0],[0,1],[1,1]]},
+  {name:'4マス Z型',type:4,c:[[1,0],[0,1],[1,1],[0,2]]}
+];
+
+const gearSets = [
+  {id:'diabolos',name:'ディアボロス',req:[1,6,4,11],epic:'闇異能ダメ+10%',legend:'闇異能耐性12%無視（暗星・濁燃関与で24%）'},
+  {id:'twin_butterfly',name:'深紅の双生蝶',req:[3,2,4,11],epic:'呪異能ダメ+10%',legend:'近くの敵が呪異能ダメを受けるたび攻撃+6%（最大6層）'},
+  {id:'kingdom_guard',name:'王国の守り',req:[2,3,6,4],epic:'防御力+15%',legend:'装備者のシールド効果+20%'},
+  {id:'little_adventure',name:'小さな大冒険',req:[0,1,8,10],epic:'HP+10%',legend:'HP減少ごとに最大HP+4%（最大10層）／EX終結で即10層'},
+  {id:'firefly_heart',name:'森に棲む蛍の心',req:[0,3,6,11],epic:'霊異能ダメ+10%',legend:'近くの敵が霊異能ダメを受けるたびクリダメ+8%（最大7層）'},
+  {id:'street_king',name:'ストリート拳王',req:[0,2,6,11],epic:'相異能ダメ+10%',legend:'クリ率+14%／味方の延滞・浸染発動でクリ率追加+14%'},
+  {id:'shadow_creed',name:'影の信条',req:[0,1,8,10],epic:'攻撃力+10%',legend:'バイレールスキル発動後、攻撃力+25%（20秒）'},
+  {id:'sonic_hedgehog',name:'音速ヘッジホッグ',req:[4,6,6,4],epic:'チャージ効率+12%',legend:'EXレール終結後、味方全員の攻撃力+15%（20秒・重複なし）'},
+  {id:'demon_curse',name:'悪魔の血：呪い',req:[1,3,6,11],epic:'魂異能ダメ+10%',legend:'与ダメ+18%（暗星・浸染付与の敵へは36%）'},
+  {id:'lost_light',name:'失われた光',req:[0,4,6,9],epic:'光異能ダメ+10%',legend:'EXレール終結後、防御力25%無視（20秒・重複なし）'},
+  {id:'tia_night_tavern',name:'ティアの夜間酒場',req:[2,3,7,6],epic:'HP+10%',legend:'装備者の治療効率+20%'},
+  {id:'quiet_villa',name:'静寂な山荘',req:[0,1,9,11],epic:'精神ダメ+10%',legend:'通常攻撃で精神ダメ+12%（最大3層）'}
+];
+
+let cells = new Set(), pieces = [], mode = 'edit', selected = 0, currentSetId = gearSets[0].id, showModeDetail = false, showSetBox = true;
+const $ = id => document.getElementById(id), board = $('board'), msg = $('msg');
+
+const modeGuides = {
+  edit: '<strong>盤面編集詳細</strong>：グレーのマスをタップで追加、追加済みマスをタップで削除（ブロック上は先に配置解除）。',
+  place: '<strong>配置詳細</strong>：選択ブロックをグレー空きマスに配置（回転・反転なし）。配置済みブロックをタップで取り外し。',
+  swap: '<strong>置換詳細</strong>：重なる既存ブロックを個数制限なしで自動解除して配置。同種タップで取り外し、置けない位置は元の配置を維持。'
+};
+
+function initCharSelect() {
+  const sel = $('charSelect');
+  sel.innerHTML = '<option value="">キャラを選択</option>';
+  CHAR_BOARDS.forEach(cb => {
+    const opt = document.createElement('option');
+    opt.value = cb.name;
+    opt.textContent = cb.name;
+    sel.appendChild(opt);
+  });
+  sel.onchange = () => {
+    const chosenName = sel.value;
+    if (!chosenName) return;
+    $('saveName').value = chosenName;
+    const saved = all()[chosenName];
+    if (saved && Array.isArray(saved.cells)) {
+      cells = new Set(saved.cells);
+      pieces = Array.isArray(saved.pieces) ? saved.pieces : [];
+      render();
+      msg.textContent = `${chosenName}の盤面を表示しました`;
+      return;
+    }
+    const preset = CHAR_BOARDS.find(cb => cb.name === chosenName);
+    if (preset) {
+      cells = new Set(preset.cells);
+      pieces = [];
+      render();
+      msg.textContent = `${chosenName}の盤面を表示しました`;
+    }
+  };
+}
+
+function getCurrentSet() {
+  return gearSets.find(s => s.id === currentSetId) || gearSets[0];
+}
+
+function buildMiniElement(shapeIdx, scale = 6) {
+  const s = shapes[shapeIdx];
+  const w = Math.max(...s.c.map(v => v[0])) + 1;
+  const h = Math.max(...s.c.map(v => v[1])) + 1;
+  const mini = document.createElement('div');
+  mini.className = 'mini';
+  mini.style.gridTemplateColumns = `repeat(${w},${scale}px)`;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const span = document.createElement('span');
+      span.style.width = `${scale}px`;
+      span.style.height = `${scale}px`;
+      span.style.visibility = s.c.some(([a, d]) => a === x && d === y) ? 'visible' : 'hidden';
+      mini.appendChild(span);
+    }
+  }
+  return mini;
+}
+
+function getMatchedReqSlots() {
+  const setObj = getCurrentSet();
+  const availCounts = new Map();
+  pieces.forEach(p => availCounts.set(p.shape, (availCounts.get(p.shape) || 0) + 1));
+  return setObj.req.map(shapeIdx => {
+    const cnt = availCounts.get(shapeIdx) || 0;
+    if (cnt > 0) {
+      availCounts.set(shapeIdx, cnt - 1);
+      return true;
+    }
+    return false;
+  });
+}
+
+function renderSetPanel() {
+  const sel = $('setSelect');
+  if (!sel.options.length) {
+    gearSets.forEach(gs => {
+      const opt = document.createElement('option');
+      opt.value = gs.id;
+      opt.textContent = gs.name;
+      sel.appendChild(opt);
+    });
+  }
+  sel.value = currentSetId;
+
+  const setObj = getCurrentSet();
+  const matched = getMatchedReqSlots();
+  const okCount = matched.filter(Boolean).length;
+  const type3Count = pieces.filter(p => shapes[p.shape]?.type === 3).length;
+
+  const badgeText = `レジェンド ${okCount}/4｜三型 ${type3Count}`;
+  const badgeClass = 'badge' + (okCount === 4 ? ' ok' : '');
+  const lb = $('legendBadge');
+  lb.textContent = badgeText;
+  lb.className = badgeClass;
+  const lbTop = $('legendBadgeTop');
+  lbTop.textContent = badgeText;
+  lbTop.className = badgeClass;
+
+  const reqGrid = $('reqGrid');
+  reqGrid.innerHTML = '';
+  setObj.req.forEach((shapeIdx, idx) => {
+    const item = document.createElement('div');
+    item.className = 'req-item' + (matched[idx] ? ' ok' : '');
+    item.appendChild(buildMiniElement(shapeIdx, 6));
+    const cap = document.createElement('div');
+    cap.textContent = `${shapes[shapeIdx].name}${matched[idx] ? '✓' : ''}`;
+    item.appendChild(cap);
+    reqGrid.appendChild(item);
+  });
+
+  $('setEffBox').innerHTML = `<strong>[2]</strong> ${setObj.epic} ／ <strong>[4]</strong> ${setObj.legend}`;
+  $('setBody').classList.toggle('hidden', !showSetBox);
+  $('toggleSetBox').textContent = showSetBox ? '効果▲' : '効果▼';
+}
+
+function occupied(ignoreSet = new Set()) {
+  const m = new Map();
+  pieces.forEach((p, pi) => {
+    if (ignoreSet.has(pi)) return;
+    p.cells.forEach(i => m.set(i, pi));
+  });
+  return m;
+}
+
+function renderModeDetail() {
+  const btn = $('detailToggle');
+  const box = $('modeDetail');
+  btn.textContent = showModeDetail ? '詳細: ON' : '詳細: OFF';
+  btn.classList.toggle('on', showModeDetail);
+  box.classList.toggle('show', showModeDetail);
+  box.innerHTML = modeGuides[mode] || '';
+}
+
+function renderModeButtons() {
+  $('modeEdit').classList.toggle('active', mode === 'edit');
+  $('modePlace').classList.toggle('active', mode === 'place');
+  $('modeSwap').classList.toggle('active', mode === 'swap');
+  $('modeTag').textContent = mode === 'edit' ? '編集モード' : (mode === 'swap' ? '置換モード' : '配置モード');
+}
+
+function renderPalette() {
+  $('palette').innerHTML = '';
+  $('selName').textContent = shapes[selected].name;
+  shapes.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'piece' + (selected === i ? ' selected' : '');
+    b.appendChild(buildMiniElement(i, 6));
+    const cap = document.createElement('small');
+    cap.textContent = s.name;
+    b.appendChild(cap);
+    b.onclick = () => {
+      selected = i;
+      if (mode === 'edit') setMode('place', false);
+      renderPalette();
+      msg.textContent = `${s.name}を選択中（${mode === 'swap' ? '置換' : '配置'}）`;
+    };
+    $('palette').appendChild(b);
+  });
+}
+
+function render() {
+  board.innerHTML = '';
+  const occ = occupied();
+  for (let i = 0; i < N * N; i++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'cell' + (cells.has(i) ? ' open' : '');
+    if (occ.has(i)) {
+      const pi = occ.get(i);
+      const pieceObj = pieces[pi];
+      const x = i % N, y = Math.floor(i / N);
+      const sameTop = y > 0 && occ.get((y - 1) * N + x) === pi;
+      const sameBottom = y < N - 1 && occ.get((y + 1) * N + x) === pi;
+      const sameLeft = x > 0 && occ.get(y * N + (x - 1)) === pi;
+      const sameRight = x < N - 1 && occ.get(y * N + (x + 1)) === pi;
+
+      b.className = 'cell placed';
+      const pieceTones = [
+        {bg: 'linear-gradient(145deg, #f8b449 0%, #dc7c1e 100%)', hi: 'rgba(255,244,200,0.55)', sh: 'rgba(95,42,0,0.42)', bd: 'rgba(20,10,4,0.88)'},
+        {bg: 'linear-gradient(145deg, #e79b35 0%, #c46614 100%)', hi: 'rgba(255,232,175,0.45)', sh: 'rgba(85,36,0,0.48)', bd: 'rgba(20,10,4,0.88)'},
+        {bg: 'linear-gradient(145deg, #ffc45c 0%, #e48624 100%)', hi: 'rgba(255,250,220,0.62)', sh: 'rgba(105,46,0,0.40)', bd: 'rgba(20,10,4,0.88)'},
+        {bg: 'linear-gradient(145deg, #d48828 0%, #b3580e 100%)', hi: 'rgba(255,220,155,0.40)', sh: 'rgba(78,30,0,0.52)', bd: 'rgba(20,10,4,0.88)'}
+      ];
+      const tone = pieceTones[pi % pieceTones.length];
+      b.style.background = tone.bg;
+
+      const borderLine = `2px solid ${tone.bd}`;
+      b.style.borderTop = sameTop ? 'none' : borderLine;
+      b.style.borderBottom = sameBottom ? 'none' : borderLine;
+      b.style.borderLeft = sameLeft ? 'none' : borderLine;
+      b.style.borderRight = sameRight ? 'none' : borderLine;
+
+      const shadows = [];
+      if (!sameTop) shadows.push(`inset 0 1.5px 0 ${tone.hi}`);
+      if (!sameBottom) shadows.push(`inset 0 -1.5px 0 ${tone.sh}`);
+      if (!sameLeft) shadows.push(`inset 1.5px 0 0 ${tone.hi}`);
+      if (!sameRight) shadows.push(`inset -1.5px 0 0 ${tone.sh}`);
+      b.style.boxShadow = shadows.length ? shadows.join(', ') : 'none';
+
+      const anchor = Math.min(...pieceObj.cells);
+      if (i === anchor) {
+        b.innerHTML = `<span style="background:rgba(15,10,6,0.68);color:#fff3cf;border-radius:3px;padding:0 2px;font-size:8.5px;line-height:1.1">${pi + 1}</span>`;
+      }
+    }
+    b.onclick = () => tap(i);
+    board.appendChild(b);
+  }
+  $('count').textContent = cells.size + 'マス';
+  $('placedCount').textContent = '配置' + pieces.length + '個';
+  renderModeButtons();
+  renderModeDetail();
+  renderSetPanel();
+}
+
+function getIdsIfValidBoard(shape, ox, oy) {
+  const coords = shape.c.map(([dx, dy]) => ({x: ox + dx, y: oy + dy}));
+  if (coords.some(q => q.x < 0 || q.x >= N || q.y < 0 || q.y >= N)) return null;
+  const ids = coords.map(q => q.y * N + q.x);
+  if (ids.some(id => !cells.has(id))) return null;
+  return ids;
+}
+
+function getAllPlacementsForShape(shapeIdx, blockedSet = new Set()) {
+  const shape = shapes[shapeIdx];
+  const res = [];
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const ids = getIdsIfValidBoard(shape, x, y);
+      if (!ids) continue;
+      if (ids.some(id => blockedSet.has(id))) continue;
+      res.push({shape: shapeIdx, cells: ids});
+    }
+  }
+  return res;
+}
+
+function fillType3Max(initialUsed) {
+  const type3Indices = [2, 3, 4, 5, 6, 7];
+  function runGreedy(orderList, startCellOffset = 0) {
+    const used = new Set(initialUsed);
+    const added = [];
+    const sortedCells = [...cells].sort((a, b) => a - b);
+    const rotatedCells = startCellOffset > 0
+      ? [...sortedCells.slice(startCellOffset % sortedCells.length), ...sortedCells.slice(0, startCellOffset % sortedCells.length)]
+      : sortedCells;
+
+    for (const cellId of rotatedCells) {
+      if (used.has(cellId)) continue;
+      for (const sIdx of orderList) {
+        const sh = shapes[sIdx];
+        const cx = cellId % N, cy = Math.floor(cellId / N);
+        let placedOne = false;
+        for (const [dx, dy] of sh.c) {
+          const ox = cx - dx, oy = cy - dy;
+          const ids = getIdsIfValidBoard(sh, ox, oy);
+          if (!ids) continue;
+          if (ids.some(id => used.has(id))) continue;
+          ids.forEach(id => used.add(id));
+          added.push({shape: sIdx, cells: ids});
+          placedOne = true;
+          break;
+        }
+        if (placedOne) break;
+      }
+    }
+    return added;
+  }
+
+  let best = runGreedy(type3Indices, 0);
+  const orders = [
+    [2, 3, 4, 5, 6, 7],
+    [3, 2, 6, 4, 5, 7],
+    [4, 6, 5, 7, 2, 3],
+    [6, 4, 7, 5, 3, 2]
+  ];
+  for (const ord of orders) {
+    for (let off = 0; off < 4; off++) {
+      const cand = runGreedy(ord, off);
+      if (cand.length > best.length) best = cand;
+    }
+  }
+  return best;
+}
+
+function fillRemnantBlocks(initialUsed) {
+  const used = new Set(initialUsed);
+  const added = [];
+  const sortedCells = [...cells].sort((a, b) => a - b);
+  const remnantOrder = [0, 1, 8, 9, 10, 11, 2, 3, 4, 5, 6, 7];
+
+  for (const cellId of sortedCells) {
+    if (used.has(cellId)) continue;
+    for (const sIdx of remnantOrder) {
+      const sh = shapes[sIdx];
+      const cx = cellId % N, cy = Math.floor(cellId / N);
+      let placedOne = false;
+      for (const [dx, dy] of sh.c) {
+        const ox = cx - dx, oy = cy - dy;
+        const ids = getIdsIfValidBoard(sh, ox, oy);
+        if (!ids) continue;
+        if (ids.some(id => used.has(id))) continue;
+        ids.forEach(id => used.add(id));
+        added.push({shape: sIdx, cells: ids});
+        placedOne = true;
+        break;
+      }
+      if (placedOne) break;
+    }
+  }
+  return added;
+}
+
+function solveLegendAndType3(setObj) {
+  if (!cells.size) {
+    return {ok: false, reason: '盤面が空です。先に盤面編集でマスを作ってください。', placed: [], legendCount: 0, type3Count: 0, extraCount: 0};
+  }
+
+  const reqOrder = [...setObj.req].sort((a, b) => {
+    return getAllPlacementsForShape(a).length - getAllPlacementsForShape(b).length;
+  });
+
+  let bestLegendSolution = null;
+  const startTime = performance.now();
+  let nodesVisited = 0;
+
+  function placeRequired(step, usedCells, chosen) {
+    if (performance.now() - startTime > 350) return;
+    if (nodesVisited++ > 40000) return;
+
+    if (step === reqOrder.length) {
+      const type3Placed = fillType3Max(usedCells);
+      const afterType3 = new Set(usedCells);
+      type3Placed.forEach(p => p.cells.forEach(id => afterType3.add(id)));
+      const extraPlaced = fillRemnantBlocks(afterType3);
+      const totalType3 = type3Placed.length;
+      const totalExtra = extraPlaced.length;
+      const score = totalType3 * 100 + totalExtra;
+
+      if (!bestLegendSolution || score > bestLegendSolution.score) {
+        bestLegendSolution = {
+          legendOk: true,
+          legendCount: chosen.length,
+          reqPlaced: [...chosen],
+          type3Placed,
+          extraPlaced,
+          score
+        };
+      }
+      return;
+    }
+
+    const shapeIdx = reqOrder[step];
+    const candidates = getAllPlacementsForShape(shapeIdx, usedCells);
+    for (const cand of candidates) {
+      cand.cells.forEach(id => usedCells.add(id));
+      chosen.push(cand);
+      placeRequired(step + 1, usedCells, chosen);
+      chosen.pop();
+      cand.cells.forEach(id => usedCells.delete(id));
+      if (bestLegendSolution && bestLegendSolution.type3Placed.length >= Math.floor((cells.size - 12) / 3)) {
+        if (performance.now() - startTime > 120) return;
+      }
+    }
+  }
+
+  placeRequired(0, new Set(), []);
+
+  if (bestLegendSolution) {
+    return {
+      ok: true,
+      legendOk: true,
+      legendCount: 4,
+      type3Count: bestLegendSolution.type3Placed.length,
+      extraCount: bestLegendSolution.extraPlaced.length,
+      placed: [...bestLegendSolution.reqPlaced, ...bestLegendSolution.type3Placed, ...bestLegendSolution.extraPlaced]
+    };
+  }
+
+  const partialReq = [];
+  const used = new Set();
+  for (const shapeIdx of setObj.req) {
+    const cands = getAllPlacementsForShape(shapeIdx, used);
+    if (cands.length > 0) {
+      partialReq.push(cands[0]);
+      cands[0].cells.forEach(id => used.add(id));
+    }
+  }
+  const type3Fallback = fillType3Max(used);
+  const afterFb = new Set(used);
+  type3Fallback.forEach(p => p.cells.forEach(id => afterFb.add(id)));
+  const extraFallback = fillRemnantBlocks(afterFb);
+
+  return {
+    ok: false,
+    legendOk: false,
+    legendCount: partialReq.length,
+    type3Count: type3Fallback.length,
+    extraCount: extraFallback.length,
+    placed: [...partialReq, ...type3Fallback, ...extraFallback],
+    reason: `この盤面では「${setObj.name}」の4ブロックが収まりきりませんでした（${partialReq.length}/4個＋三型${type3Fallback.length}個＋余り${extraFallback.length}個）。`
+  };
+}
+
+function findCandidatesCoveringCell(shape, cellIndex) {
+  const cx = cellIndex % N, cy = Math.floor(cellIndex / N);
+  const occ = occupied();
+  const candidates = [];
+  for (const [dx, dy] of shape.c) {
+    const ox = cx - dx, oy = cy - dy;
+    const ids = getIdsIfValidBoard(shape, ox, oy);
+    if (!ids) continue;
+    if (ids.some(id => occ.has(id))) continue;
+    candidates.push({ox, oy, ids});
+  }
+  candidates.sort((a, b) => (a.oy * N + a.ox) - (b.oy * N + b.ox));
+  return candidates;
+}
+
+function findMultiSwapCandidates(shape, tappedCellIndex) {
+  const occ = occupied();
+  const tappedPieceIndex = occ.has(tappedCellIndex) ? occ.get(tappedCellIndex) : -1;
+  const anchorCells = tappedPieceIndex !== -1 ? pieces[tappedPieceIndex].cells : [tappedCellIndex];
+  const candidates = [];
+  const seen = new Set();
+
+  for (const anchorCell of anchorCells) {
+    const cx = anchorCell % N, cy = Math.floor(anchorCell / N);
+    for (const [dx, dy] of shape.c) {
+      const ox = cx - dx, oy = cy - dy;
+      const ids = getIdsIfValidBoard(shape, ox, oy);
+      if (!ids) continue;
+
+      const sig = ids.join(',');
+      if (seen.has(sig)) continue;
+      seen.add(sig);
+
+      const overlapSet = new Set();
+      for (const id of ids) {
+        if (occ.has(id)) overlapSet.add(occ.get(id));
+      }
+
+      if (tappedPieceIndex !== -1 && !overlapSet.has(tappedPieceIndex)) continue;
+
+      const hitsTapped = ids.includes(tappedCellIndex) ? 0 : 1;
+      const removedIndices = [...overlapSet].sort((a, b) => a - b);
+      let overlappedCellCount = 0;
+      for (const pi of removedIndices) {
+        overlappedCellCount += pieces[pi].cells.filter(id => ids.includes(id)).length;
+      }
+
+      candidates.push({
+        ox, oy, ids, removedIndices,
+        removeCount: removedIndices.length,
+        hitsTapped,
+        overlappedCellCount,
+        posScore: oy * N + ox
+      });
+    }
+  }
+
+  candidates.sort((a, b) => {
+    if (a.removeCount !== b.removeCount) return a.removeCount - b.removeCount;
+    if (a.hitsTapped !== b.hitsTapped) return a.hitsTapped - b.hitsTapped;
+    if (a.overlappedCellCount !== b.overlappedCellCount) return b.overlappedCellCount - a.overlappedCellCount;
+    return a.posScore - b.posScore;
+  });
+
+  return candidates;
+}
+
+function tap(i) {
+  if (mode === 'edit') {
+    if (occupied().has(i)) {
+      msg.textContent = 'ブロックがあるマスは削除できません（先に配置解除してください）';
+      return;
+    }
+    if (cells.has(i)) {
+      cells.delete(i);
+      msg.textContent = 'マスを削除しました';
+    } else {
+      cells.add(i);
+      msg.textContent = 'マスを追加しました';
+    }
+    render();
+    return;
+  }
+
+  const occ = occupied();
+  const s = shapes[selected];
+
+  if (mode === 'swap') {
+    if (!cells.has(i)) {
+      msg.textContent = '使用可能なマス（グレーまたはブロック）をタップしてください';
+      return;
+    }
+    if (occ.has(i)) {
+      const pi = occ.get(i);
+      if (pieces[pi].shape === selected) {
+        pieces.splice(pi, 1);
+        msg.textContent = '同じブロックのため取り外しました';
+        render();
+        return;
+      }
+    }
+    if (!occ.has(i)) {
+      const freeCandidates = findCandidatesCoveringCell(s, i);
+      if (freeCandidates.length > 0) {
+        pieces.push({shape: selected, cells: freeCandidates[0].ids});
+        msg.textContent = s.name + 'を配置しました';
+        render();
+        return;
+      }
+    }
+    const swapCandidates = findMultiSwapCandidates(s, i);
+    if (swapCandidates.length > 0) {
+      const best = swapCandidates[0];
+      const toRemove = new Set(best.removedIndices);
+      pieces = pieces.filter((_, idx) => !toRemove.has(idx));
+      pieces.push({shape: selected, cells: best.ids});
+      msg.textContent = best.removeCount > 0
+        ? `${best.removeCount}個を外して${s.name}に置き換えました`
+        : s.name + 'を配置しました';
+      render();
+    } else {
+      msg.textContent = `${s.name}を置けないため元の配置を維持しました`;
+    }
+    return;
+  }
+
+  if (occ.has(i)) {
+    const pi = occ.get(i);
+    pieces.splice(pi, 1);
+    msg.textContent = 'ブロックを取り外しました';
+    render();
+    return;
+  }
+
+  if (!cells.has(i)) {
+    msg.textContent = '使用可能なマス（グレー）をタップしてください';
+    return;
+  }
+
+  const candidates = findCandidatesCoveringCell(s, i);
+  if (!candidates.length) {
+    msg.textContent = 'そこには置けません。別のマスをタップしてください';
+    return;
+  }
+  pieces.push({shape: selected, cells: candidates[0].ids});
+  msg.textContent = s.name + 'を配置しました';
+  render();
+}
+
+function setMode(m, announce = true) {
+  mode = m;
+  renderModeButtons();
+  renderModeDetail();
+  if (announce) {
+    if (m === 'edit') msg.textContent = '盤面編集：マスをタップして追加・削除';
+    else if (m === 'swap') msg.textContent = `置換モード：${shapes[selected].name}を配置（重なり自動解除・同種は消去）`;
+    else msg.textContent = `配置モード：${shapes[selected].name}を配置（配置済みタップで解除）`;
+  }
+}
+
+$('toggleSetBox').onclick = () => {
+  showSetBox = !showSetBox;
+  renderSetPanel();
+};
+
+$('detailToggle').onclick = () => {
+  showModeDetail = !showModeDetail;
+  renderModeDetail();
+  msg.textContent = showModeDetail ? 'モード詳細を表示しました' : 'モード詳細を非表示にしました';
+};
+
+$('modeEdit').onclick = () => setMode('edit');
+$('modePlace').onclick = () => setMode(mode === 'place' ? 'swap' : 'place');
+$('modeSwap').onclick = () => setMode(mode === 'swap' ? 'place' : 'swap');
+
+$('setSelect').onchange = e => {
+  currentSetId = e.target.value;
+  renderSetPanel();
+};
+
+$('solveBtn').onclick = () => {
+  const setObj = getCurrentSet();
+  const res = solveLegendAndType3(setObj);
+  if (!cells.size) {
+    msg.textContent = res.reason;
+    $('solveSummary').textContent = res.reason;
+    return;
+  }
+  pieces = res.placed;
+  render();
+  const usedMass = pieces.reduce((acc, p) => acc + (shapes[p.shape]?.c.length || 0), 0);
+  const remCells = Math.max(0, cells.size - usedMass);
+  if (res.legendOk) {
+    const extraPart = res.extraCount > 0 ? `＋余り埋め${res.extraCount}個` : '';
+    const text = `「${setObj.name}」達成＋三型${res.type3Count}個${extraPart}（${usedMass}/${cells.size}マス使用・残${remCells}）`;
+    $('solveSummary').textContent = text;
+    msg.textContent = text;
+  } else {
+    $('solveSummary').textContent = res.reason;
+    msg.textContent = res.reason;
+  }
+};
+
+$('quickClearPieces').onclick = () => {
+  pieces = [];
+  render();
+  msg.textContent = '配置をすべて解除しました';
+};
+
+function all() {
+  try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; }
+}
+
+function refresh() {
+  const sel = $('saved'), old = sel.value;
+  sel.innerHTML = '<option value="">保存した盤面を選択</option>';
+  Object.keys(all()).sort().forEach(n => {
+    const o = document.createElement('option');
+    o.value = n;
+    o.textContent = n;
+    sel.appendChild(o);
+  });
+  if (all()[old]) sel.value = old;
+}
+
+$('clearBoard').onclick = () => {
+  if (confirm('盤面と配置を全消去しますか？')) {
+    cells.clear();
+    pieces = [];
+    render();
+    msg.textContent = '盤面と配置を全消去しました';
+  }
+};
+$('clearPieces').onclick = () => {
+  pieces = [];
+  render();
+  msg.textContent = 'ブロック配置を全消去しました';
+};
+$('save').onclick = () => {
+  const customName = $('saveName').value.trim();
+  const charName = $('charSelect').value.trim();
+  const n = customName || charName;
+  if (!n) { msg.textContent = '保存名を入力するかキャラを選択してください'; return; }
+  if (!cells.size) { msg.textContent = '盤面を先に作ってください'; return; }
+  const a = all();
+  a[n] = {width: N, height: N, cells: [...cells], pieces, setId: currentSetId};
+  localStorage.setItem(key, JSON.stringify(a));
+  refresh();
+  $('saved').value = n;
+  $('saveName').value = n;
+  msg.textContent = n + 'を保存しました';
+};
+$('load').onclick = () => {
+  const n = $('saved').value, v = all()[n];
+  if (!v) { msg.textContent = '読み込む盤面を選んでください'; return; }
+  cells = new Set(v.cells);
+  pieces = Array.isArray(v.pieces) ? v.pieces : [];
+  if (v.setId && gearSets.some(s => s.id === v.setId)) currentSetId = v.setId;
+  $('charSelect').value = CHAR_BOARDS.some(cb => cb.name === n) ? n : '';
+  $('saveName').value = n;
+  render();
+  msg.textContent = n + 'を読み込みました';
+};
+$('delete').onclick = () => {
+  const n = $('saved').value;
+  if (!n) return;
+  const a = all();
+  delete a[n];
+  localStorage.setItem(key, JSON.stringify(a));
+  refresh();
+  msg.textContent = n + 'を削除しました';
+};
+$('export').onclick = () => {
+  const blob = new Blob([JSON.stringify(all(), null, 2)], {type: 'application/json'}), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'nte-gear-data.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  msg.textContent = 'JSONを書き出しました';
+};
+$('import').onclick = () => $('file').click();
+$('file').onchange = async e => {
+  try {
+    const d = JSON.parse(await e.target.files[0].text());
+    localStorage.setItem(key, JSON.stringify({...all(), ...d}));
+    refresh();
+    msg.textContent = 'JSONを読み込みました';
+  } catch {
+    msg.textContent = '読み込みに失敗しました';
+  }
+  e.target.value = '';
+};
+
+initCharSelect();
+renderPalette();
+render();
+refresh();
+</script>
+</body>
+</html>
